@@ -136,7 +136,29 @@ function chooseSubjectWithMemory(problem, memory) {
 }
 
 function generateSummary(data) {
-  return `📌 Resumo do Atendimento:\n\n* Cliente: ${data.cliente}\n* Assunto: ${data.assunto}\n* Problema: ${data.problema}\n* Ação realizada: ${data.acao}\n* Status: ${data.status}\n* Inatividade: ${data.inatividade}\n* Observações: ${data.observacoes}`;
+  const lines = ["📌 Resumo do Atendimento:", ""];
+
+  if (data.cliente !== "Não identificado") {
+    lines.push(`* Cliente: ${data.cliente}`);
+  }
+
+  if (data.assunto !== "Atendimento geral") {
+    lines.push(`* Assunto: ${data.assunto}`);
+  }
+
+  lines.push(`* Problema: ${data.problema}`);
+  lines.push(`* Ação realizada: ${data.acao}`);
+  lines.push(`* Status: ${data.status}`);
+
+  if (data.inatividade !== "Sim") {
+    lines.push(`* Inatividade: ${data.inatividade}`);
+  }
+
+  if (data.observacoes !== "Sem observações") {
+    lines.push(`* Observações: ${data.observacoes}`);
+  }
+
+  return lines.join("\n");
 }
 
 function processAttendance(text, memory) {

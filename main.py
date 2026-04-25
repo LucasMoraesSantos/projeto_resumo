@@ -187,17 +187,26 @@ def choose_subject_with_memory(problem: str, memory: List[Dict[str, str]]) -> st
 
 
 def generate_summary(data: Dict[str, str]) -> str:
-    """Gera resumo no formato obrigatório."""
-    return (
-        "📌 Resumo do Atendimento:\n\n"
-        f"* Cliente: {data['cliente']}\n"
-        f"* Assunto: {data['assunto']}\n"
-        f"* Problema: {data['problema']}\n"
-        f"* Ação realizada: {data['acao']}\n"
-        f"* Status: {data['status']}\n"
-        f"* Inatividade: {data['inatividade']}\n"
-        f"* Observações: {data['observacoes']}"
-    )
+    """Gera resumo com omissão de campos padrão não desejados."""
+    lines = ["📌 Resumo do Atendimento:", ""]
+
+    if data["cliente"] != "Não identificado":
+        lines.append(f"* Cliente: {data['cliente']}")
+
+    if data["assunto"] != "Atendimento geral":
+        lines.append(f"* Assunto: {data['assunto']}")
+
+    lines.append(f"* Problema: {data['problema']}")
+    lines.append(f"* Ação realizada: {data['acao']}")
+    lines.append(f"* Status: {data['status']}")
+
+    if data["inatividade"] != "Sim":
+        lines.append(f"* Inatividade: {data['inatividade']}")
+
+    if data["observacoes"] != "Sem observações":
+        lines.append(f"* Observações: {data['observacoes']}")
+
+    return "\n".join(lines)
 
 
 def process_attendance(text: str, memory: List[Dict[str, str]]) -> Tuple[Dict[str, str], str]:
