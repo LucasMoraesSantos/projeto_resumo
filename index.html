@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resumo de Atendimento Offline</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Resumo de Atendimento (Offline)</h1>
+      <p class="subtitle">Sem APIs externas • Processamento 100% local</p>
+
+      <section class="card">
+        <label for="attendanceInput">Texto do atendimento</label>
+        <textarea
+          id="attendanceInput"
+          rows="12"
+          placeholder="Exemplo:\nCliente: Maria Silva\nCliente relata problema de login no sistema..."
+        ></textarea>
+        <button id="generateButton" type="button">Gerar resumo</button>
+      </section>
+
+      <section class="card">
+        <h2>Resumo gerado</h2>
+        <pre id="summaryOutput">Nenhum resumo gerado ainda.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Histórico local</h2>
+        <p id="historyCount">0 atendimento(s) salvo(s).</p>
+        <button id="clearHistoryButton" type="button" class="secondary">Limpar histórico</button>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
