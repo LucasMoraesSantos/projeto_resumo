@@ -7,6 +7,21 @@ function splitSentences(text) {
     .filter(Boolean);
 }
 
+function joinUniqueSentences(sentences) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const sentence of sentences) {
+    const normalized = sentence.trim().toLowerCase();
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      unique.push(sentence.trim());
+    }
+  }
+
+  return unique.join(" | ");
+}
+
 function extractClientName(text) {
   const match = text.match(/cliente\s*:\s*([^\n,;.]+)/i);
   return match ? match[1].trim() : "Não identificado";
@@ -14,25 +29,41 @@ function extractClientName(text) {
 
 function findProblem(text) {
   const keywords = ["problema", "erro", "não funciona", "nao funciona", "falha"];
+  const matches = [];
 
   for (const sentence of splitSentences(text)) {
     const lower = sentence.toLowerCase();
     if (keywords.some((keyword) => lower.includes(keyword))) {
-      return sentence;
+      matches.push(sentence);
     }
+  }
+
+  if (matches.length) {
+    return joinUniqueSentences(matches);
   }
 
   return "Não informado";
 }
 
 function findAction(text) {
-  const keywords = ["senha", "suporte", "orientado", "orientação", "reiniciado", "ajustado"];
+  const keywords = [
+    "senha",
+    "suporte",
+    "orientado",
+    "orientação",
+    "reiniciado",
+    "ajustado",
+    "atualizado",
+    "corrigido",
+    "instruído",
+    "informado",
+  ];
   const matches = splitSentences(text).filter((sentence) => {
     const lower = sentence.toLowerCase();
     return keywords.some((keyword) => lower.includes(keyword));
   });
 
-  return matches.length ? matches.join(" | ") : "Não informada";
+  return matches.length ? joinUniqueSentences(matches) : "Não informada";
 }
 
 function findStatus(text) {
@@ -69,17 +100,23 @@ function detectInactivity(text) {
   return lines[lines.length - 1].toLowerCase().startsWith("cliente:") ? "Não" : "Sim";
 }
 
-function findObservations(text) {
-  const keywords = ["observação", "obs", "importante", "nota"];
-  const matches = splitSentences(text).filter((sentence) => {
-    const lower = sentence.toLowerCase();
-    return keywords.some((keyword) => lower.includes(keyword));
-  });
+function findObservations(text, problem, action) {
+  const allSentences = splitSentences(text);
+  const usedChunks = new Set();
 
-  return matches.length ? matches.join(" | ") : "Sem observações";
+  for (const chunk of [...problem.split(" | "), ...action.split(" | ")]) {
+    const normalized = chunk.trim().toLowerCase();
+    if (normalized) usedChunks.add(normalized);
+  }
+
+  const extras = allSentences.filter((sentence) => !usedChunks.has(sentence.toLowerCase()));
+  const complementary = joinUniqueSentences(extras.slice(0, 3));
+  return complementary ? `Resumo complementar: ${complementary}` : "Sem observações";
 }
 
 function normalizeProblem(problem) {
+  if (problem.includes(" | ") || problem.length > 40) return problem;
+
   const lower = problem.toLowerCase();
   if (lower.includes("login")) return "Problema de login";
   if (lower.includes("senha")) return "Problema de senha";
@@ -163,15 +200,16 @@ function generateSummary(data) {
 
 function processAttendance(text, memory) {
   const problem = findProblem(text);
+  const action = findAction(text);
 
   const data = {
     cliente: extractClientName(text),
     assunto: chooseSubjectWithMemory(problem, memory),
     problema: normalizeProblem(problem),
-    acao: findAction(text),
+    acao: action,
     status: findStatus(text),
     inatividade: detectInactivity(text),
-    observacoes: findObservations(text),
+    observacoes: findObservations(text, problem, action),
   };
 
   return generateSummary(data);

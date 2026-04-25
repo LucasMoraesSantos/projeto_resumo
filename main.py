@@ -60,19 +60,21 @@ def split_sentences(text: str) -> List[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
+def join_unique_sentences(sentences: List[str]) -> str:
+    """Remove duplicações preservando ordem e junta em uma linha."""
+    unique: List[str] = []
+    seen = set()
+    for sentence in sentences:
+        normalized = sentence.strip().lower()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique.append(sentence.strip())
+    return " | ".join(unique)
+
+
 def find_problem(text: str) -> str:
-    """Identifica frase com sinais de problema."""
+    """Identifica todas as frases com sinais de problema."""
     keywords = ["problema", "erro", "não funciona", "nao funciona", "falha"]
-    for sentence in split_sentences(text):
-        lower_sentence = sentence.lower()
-        if any(keyword in lower_sentence for keyword in keywords):
-            return sentence
-    return "Não informado"
-
-
-def find_action(text: str) -> str:
-    """Identifica ação executada durante o atendimento."""
-    keywords = ["senha", "suporte", "orientado", "orientação", "reiniciado", "ajustado"]
     matches: List[str] = []
 
     for sentence in split_sentences(text):
@@ -81,7 +83,34 @@ def find_action(text: str) -> str:
             matches.append(sentence)
 
     if matches:
-        return " | ".join(matches)
+        return join_unique_sentences(matches)
+
+    return "Não informado"
+
+
+def find_action(text: str) -> str:
+    """Identifica ações executadas durante o atendimento."""
+    keywords = [
+        "senha",
+        "suporte",
+        "orientado",
+        "orientação",
+        "reiniciado",
+        "ajustado",
+        "atualizado",
+        "corrigido",
+        "instruído",
+        "informado",
+    ]
+    matches: List[str] = []
+
+    for sentence in split_sentences(text):
+        lower_sentence = sentence.lower()
+        if any(keyword in lower_sentence for keyword in keywords):
+            matches.append(sentence)
+
+    if matches:
+        return join_unique_sentences(matches)
     return "Não informada"
 
 
@@ -133,22 +162,33 @@ def detect_inactivity(text: str) -> str:
     return "Sim"
 
 
-def find_observations(text: str) -> str:
-    """Busca detalhes extras para observações."""
-    obs_keywords = ["observação", "obs", "importante", "nota"]
-    obs_sentences = []
-    for sentence in split_sentences(text):
-        lowered = sentence.lower()
-        if any(keyword in lowered for keyword in obs_keywords):
-            obs_sentences.append(sentence)
+def find_observations(text: str, problem: str, action: str) -> str:
+    """Gera síntese complementar do que foi tratado no atendimento."""
+    all_sentences = split_sentences(text)
+    used_chunks = set()
 
-    if obs_sentences:
-        return " | ".join(obs_sentences)
+    for chunk in (problem.split(" | ") + action.split(" | ")):
+        normalized = chunk.strip().lower()
+        if normalized:
+            used_chunks.add(normalized)
+
+    extras: List[str] = []
+    for sentence in all_sentences:
+        normalized = sentence.lower()
+        if normalized not in used_chunks:
+            extras.append(sentence)
+
+    extras_joined = join_unique_sentences(extras[:3])
+    if extras_joined:
+        return f"Resumo complementar: {extras_joined}"
     return "Sem observações"
 
 
 def normalize_problem(problem: str) -> str:
     """Normaliza formulações frequentes para manter consistência local."""
+    if " | " in problem or len(problem) > 40:
+        return problem
+
     lowered = problem.lower()
     if "login" in lowered:
         return "Problema de login"
@@ -216,7 +256,7 @@ def process_attendance(text: str, memory: List[Dict[str, str]]) -> Tuple[Dict[st
     action = find_action(text)
     status = find_status(text)
     inactivity = detect_inactivity(text)
-    observations = find_observations(text)
+    observations = find_observations(text, problem, action)
     subject = choose_subject_with_memory(problem, memory)
 
     structured = {
